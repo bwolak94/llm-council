@@ -79,3 +79,61 @@
   color: #333;
   line-height: 1.6;
 }
+
+.tab-failed {
+  color: #c0392b !important;
+  border-color: #f5c6c6 !important;
+  background: #fff5f5 !important;
+  cursor: default !important;
+}
+
+.failed-models {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.failed-model-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fff5f5;
+  border: 1px solid #f5c6c6;
+  border-radius: 6px;
+}
+
+.failed-model-name {
+  font-size: 13px;
+  font-family: monospace;
+  color: #c0392b;
+}
+
+.failed-model-label {
+  font-size: 12px;
+  color: #999;
+  flex: 1;
+}
+
+.retry-btn {
+  padding: 5px 14px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 5px;
+  color: #555;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.retry-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #4a90e2;
+  color: #333;
+}
+
+.retry-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

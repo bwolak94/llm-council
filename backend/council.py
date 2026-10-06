@@ -5,7 +5,7 @@ from .openrouter import query_models_parallel, query_model
 from .config import get_council_models, get_chairman_model
 
 
-async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
+async def stage1_collect_responses(user_query: str) -> Tuple[List[Dict[str, Any]], List[str]]:
     """
     Stage 1: Collect individual responses from all council models.
 
@@ -13,7 +13,7 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
         user_query: The user's question
 
     Returns:
-        List of dicts with 'model' and 'response' keys
+        Tuple of (results list, failed_models list)
     """
     messages = [{"role": "user", "content": user_query}]
 
@@ -22,15 +22,50 @@ async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
 
     # Format results
     stage1_results = []
+    failed_models = []
     for model, response in responses.items():
-        if response is not None:  # Only include successful responses
+        if response is not None:
             stage1_results.append({
                 "model": model,
                 "response": response.get('content', ''),
                 "usage": response.get('usage'),
             })
+        else:
+            failed_models.append(model)
 
-    return stage1_results
+    return stage1_results, failed_models
+
+
+async def stage1_stream_responses(user_query: str):
+    """
+    Async generator that yields Stage 1 results as each model responds,
+    without waiting for all models to finish.
+
+    Yields dicts with 'type' of 'model_complete' or 'model_failed'.
+    """
+    import asyncio as _asyncio
+
+    messages = [{"role": "user", "content": user_query}]
+
+    async def _query(model):
+        result = await query_model(model, messages)
+        return model, result
+
+    tasks = [_asyncio.create_task(_query(model)) for model in get_council_models()]
+
+    for future in _asyncio.as_completed(tasks):
+        model, response = await future
+        if response is not None:
+            yield {
+                "type": "model_complete",
+                "data": {
+                    "model": model,
+                    "response": response.get('content', ''),
+                    "usage": response.get('usage'),
+                }
+            }
+        else:
+            yield {"type": "model_failed", "model": model}
 
 
 async def stage2_collect_rankings(
@@ -305,14 +340,14 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
     """
     # Stage 1: Collect individual responses
-    stage1_results = await stage1_collect_responses(user_query)
+    stage1_results, failed_models = await stage1_collect_responses(user_query)
 
     # If no models responded successfully, return error
     if not stage1_results:
         return [], [], {
             "model": "error",
             "response": "All models failed to respond. Please try again."
-        }, {}
+        }, {"failed_models": failed_models}
 
     # Stage 2: Collect rankings
     stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
@@ -330,7 +365,8 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
     # Prepare metadata
     metadata = {
         "label_to_model": label_to_model,
-        "aggregate_rankings": aggregate_rankings
+        "aggregate_rankings": aggregate_rankings,
+        "failed_models": failed_models,
     }
 
     return stage1_results, stage2_results, stage3_result, metadata

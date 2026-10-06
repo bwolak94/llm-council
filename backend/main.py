@@ -10,8 +10,9 @@ import json
 import asyncio
 
 from . import storage
-from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
+from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage1_stream_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
 from .config import get_council_models, get_chairman_model, set_council_models, set_chairman_model, AVAILABLE_MODELS
+from .openrouter import query_model
 
 app = FastAPI(title="LLM Council API")
 
@@ -39,6 +40,11 @@ class UpdateConfigRequest(BaseModel):
     """Request to update runtime council configuration."""
     council_models: List[str]
     chairman_model: str
+
+
+class RetryModelRequest(BaseModel):
+    """Request to retry a single failed model from Stage 1."""
+    model: str
 
 
 class ConversationMetadata(BaseModel):
@@ -177,10 +183,17 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             if is_first_message:
                 title_task = asyncio.create_task(generate_conversation_title(request.content))
 
-            # Stage 1: Collect responses
+            # Stage 1: Stream individual model responses as they arrive
             yield f"data: {json.dumps({'type': 'stage1_start'})}\n\n"
-            stage1_results = await stage1_collect_responses(request.content)
-            yield f"data: {json.dumps({'type': 'stage1_complete', 'data': stage1_results})}\n\n"
+            stage1_results = []
+            failed_models = []
+            async for event in stage1_stream_responses(request.content):
+                if event["type"] == "model_complete":
+                    stage1_results.append(event["data"])
+                    yield f"data: {json.dumps({'type': 'stage1_model_complete', 'data': event['data']})}\n\n"
+                else:
+                    failed_models.append(event["model"])
+            yield f"data: {json.dumps({'type': 'stage1_complete', 'failed_models': failed_models})}\n\n"
 
             # Stage 2: Collect rankings
             yield f"data: {json.dumps({'type': 'stage2_start'})}\n\n"
@@ -222,6 +235,35 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             "Connection": "keep-alive",
         }
     )
+
+
+@app.post("/api/conversations/{conversation_id}/retry-model")
+async def retry_model(conversation_id: str, request: RetryModelRequest):
+    """
+    Retry a single failed model from Stage 1.
+    Returns the model's response without re-running the full council process.
+    """
+    conversation = storage.get_conversation(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Find the last user message to know what to ask
+    user_messages = [m for m in conversation["messages"] if m["role"] == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found in conversation")
+
+    user_query = user_messages[-1]["content"]
+    messages = [{"role": "user", "content": user_query}]
+
+    response = await query_model(request.model, messages)
+    if response is None:
+        raise HTTPException(status_code=502, detail=f"Model {request.model} failed to respond")
+
+    return {
+        "model": request.model,
+        "response": response.get('content', ''),
+        "usage": response.get('usage'),
+    }
 
 
 if __name__ == "__main__":
