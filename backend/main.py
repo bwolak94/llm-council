@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import uuid
 import json
 import asyncio
@@ -34,6 +34,7 @@ class CreateConversationRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     """Request to send a message in a conversation."""
     content: str
+    criteria: Optional[List[str]] = None
 
 
 class UpdateConfigRequest(BaseModel):
@@ -139,7 +140,8 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
 
     # Run the 3-stage council process
     stage1_results, stage2_results, stage3_result, metadata = await run_full_council(
-        request.content
+        request.content,
+        request.criteria
     )
 
     # Add assistant message with all stages
@@ -147,7 +149,8 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
         conversation_id,
         stage1_results,
         stage2_results,
-        stage3_result
+        stage3_result,
+        metadata.get("aggregate_rankings")
     )
 
     # Return the complete response with metadata
@@ -197,7 +200,7 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
 
             # Stage 2: Collect rankings
             yield f"data: {json.dumps({'type': 'stage2_start'})}\n\n"
-            stage2_results, label_to_model = await stage2_collect_rankings(request.content, stage1_results)
+            stage2_results, label_to_model = await stage2_collect_rankings(request.content, stage1_results, request.criteria)
             aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)
             yield f"data: {json.dumps({'type': 'stage2_complete', 'data': stage2_results, 'metadata': {'label_to_model': label_to_model, 'aggregate_rankings': aggregate_rankings}})}\n\n"
 
@@ -217,7 +220,8 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
                 conversation_id,
                 stage1_results,
                 stage2_results,
-                stage3_result
+                stage3_result,
+                aggregate_rankings
             )
 
             # Send completion event
@@ -235,6 +239,60 @@ async def send_message_stream(conversation_id: str, request: SendMessageRequest)
             "Connection": "keep-alive",
         }
     )
+
+
+@app.get("/api/analytics")
+async def get_analytics():
+    """
+    Aggregate ranking data across all conversations for performance analytics.
+    Only counts messages that have persisted aggregate_rankings.
+    """
+    conversations = storage.list_conversations()
+
+    model_data: Dict[str, Dict[str, Any]] = {}
+
+    for conv_meta in conversations:
+        conv = storage.get_conversation(conv_meta["id"])
+        if conv is None:
+            continue
+        for msg in conv["messages"]:
+            if msg.get("role") != "assistant":
+                continue
+            rankings = msg.get("aggregate_rankings")
+            if not rankings:
+                continue
+            # The first entry in aggregate_rankings is the winner for this conversation
+            winner = rankings[0]["model"] if rankings else None
+            for entry in rankings:
+                model = entry["model"]
+                if model not in model_data:
+                    model_data[model] = {
+                        "appearances": 0,
+                        "rank_sum": 0.0,
+                        "wins": 0,
+                    }
+                model_data[model]["appearances"] += 1
+                model_data[model]["rank_sum"] += entry["average_rank"]
+                if model == winner:
+                    model_data[model]["wins"] += 1
+
+    result = []
+    for model, data in model_data.items():
+        n = data["appearances"]
+        result.append({
+            "model": model,
+            "appearances": n,
+            "average_rank": round(data["rank_sum"] / n, 2),
+            "wins": data["wins"],
+            "win_rate": round(data["wins"] / n, 2),
+        })
+
+    result.sort(key=lambda x: x["average_rank"])
+
+    return {
+        "models": result,
+        "total_conversations": len(conversations),
+    }
 
 
 @app.post("/api/conversations/{conversation_id}/retry-model")
