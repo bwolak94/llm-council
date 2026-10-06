@@ -89,6 +89,22 @@ export const api = {
   },
 
   /**
+   * Retry a single failed model from Stage 1.
+   */
+  async retryModel(conversationId, model) {
+    const response = await fetch(
+      `${API_BASE}/api/conversations/${conversationId}/retry-model`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model }),
+      }
+    );
+    if (!response.ok) throw new Error(`Retry failed for model ${model}`);
+    return response.json();
+  },
+
+  /**
    * Send a message and receive streaming updates.
    * @param {string} conversationId - The conversation ID
    * @param {string} content - The message content

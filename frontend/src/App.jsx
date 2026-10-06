@@ -99,6 +99,17 @@ function App() {
               const messages = [...prev.messages];
               const lastMsg = messages[messages.length - 1];
               lastMsg.loading.stage1 = true;
+              lastMsg.stage1 = [];
+              lastMsg.failedModels = [];
+              return { ...prev, messages };
+            });
+            break;
+
+          case 'stage1_model_complete':
+            setCurrentConversation((prev) => {
+              const messages = [...prev.messages];
+              const lastMsg = messages[messages.length - 1];
+              lastMsg.stage1 = [...(lastMsg.stage1 || []), event.data];
               return { ...prev, messages };
             });
             break;
@@ -107,8 +118,8 @@ function App() {
             setCurrentConversation((prev) => {
               const messages = [...prev.messages];
               const lastMsg = messages[messages.length - 1];
-              lastMsg.stage1 = event.data;
               lastMsg.loading.stage1 = false;
+              lastMsg.failedModels = event.failed_models || [];
               return { ...prev, messages };
             });
             break;
