@@ -37,6 +37,56 @@ export default function ChatInterface({
     }
   };
 
+  const handleExport = () => {
+    if (!conversation) return;
+
+    const lines = [];
+    lines.push('# LLM Council Conversation\n');
+
+    for (const msg of conversation.messages) {
+      if (msg.role === 'user') {
+        lines.push('## You\n');
+        lines.push(msg.content);
+        lines.push('\n');
+      } else {
+        lines.push('## LLM Council\n');
+
+        if (msg.stage1) {
+          lines.push('### Stage 1: Individual Responses\n');
+          for (const r of msg.stage1) {
+            lines.push(`#### ${r.model}\n`);
+            lines.push(r.response);
+            lines.push('\n');
+          }
+        }
+
+        if (msg.stage2) {
+          lines.push('### Stage 2: Peer Rankings\n');
+          for (const r of msg.stage2) {
+            lines.push(`#### ${r.model}\n`);
+            lines.push(r.ranking);
+            lines.push('\n');
+          }
+        }
+
+        if (msg.stage3) {
+          lines.push('### Stage 3: Final Answer\n');
+          lines.push(`*Chairman: ${msg.stage3.model}*\n`);
+          lines.push(msg.stage3.response);
+          lines.push('\n');
+        }
+      }
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `llm-council-${conversation.id.slice(0, 8)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (!conversation) {
     return (
       <div className="chat-interface">
@@ -48,8 +98,17 @@ export default function ChatInterface({
     );
   }
 
+  const hasMessages = conversation.messages.length > 0;
+
   return (
     <div className="chat-interface">
+      {hasMessages && (
+        <div className="chat-toolbar">
+          <button className="export-btn" onClick={handleExport}>
+            Export as Markdown
+          </button>
+        </div>
+      )}
       <div className="messages-container">
         {conversation.messages.length === 0 ? (
           <div className="empty-state">

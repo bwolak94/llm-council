@@ -45,7 +45,8 @@ async def query_model(
 
             return {
                 'content': message.get('content'),
-                'reasoning_details': message.get('reasoning_details')
+                'reasoning_details': message.get('reasoning_details'),
+                'usage': data.get('usage'),
             }
 
     except Exception as e:

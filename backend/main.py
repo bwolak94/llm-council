@@ -11,6 +11,7 @@ import asyncio
 
 from . import storage
 from .council import run_full_council, generate_conversation_title, stage1_collect_responses, stage2_collect_rankings, stage3_synthesize_final, calculate_aggregate_rankings
+from .config import get_council_models, get_chairman_model, set_council_models, set_chairman_model, AVAILABLE_MODELS
 
 app = FastAPI(title="LLM Council API")
 
@@ -34,6 +35,12 @@ class SendMessageRequest(BaseModel):
     content: str
 
 
+class UpdateConfigRequest(BaseModel):
+    """Request to update runtime council configuration."""
+    council_models: List[str]
+    chairman_model: str
+
+
 class ConversationMetadata(BaseModel):
     """Conversation metadata for list view."""
     id: str
@@ -54,6 +61,29 @@ class Conversation(BaseModel):
 async def root():
     """Health check endpoint."""
     return {"status": "ok", "service": "LLM Council API"}
+
+
+@app.get("/api/config")
+async def get_config():
+    """Get current council configuration."""
+    return {
+        "council_models": get_council_models(),
+        "chairman_model": get_chairman_model(),
+        "available_models": AVAILABLE_MODELS,
+    }
+
+
+@app.put("/api/config")
+async def update_config(request: UpdateConfigRequest):
+    """Update council configuration at runtime."""
+    if len(request.council_models) < 2:
+        raise HTTPException(status_code=400, detail="At least 2 council models required")
+    set_council_models(request.council_models)
+    set_chairman_model(request.chairman_model)
+    return {
+        "council_models": request.council_models,
+        "chairman_model": request.chairman_model,
+    }
 
 
 @app.get("/api/conversations", response_model=List[ConversationMetadata])

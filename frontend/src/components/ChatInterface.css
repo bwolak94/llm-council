@@ -6,6 +6,31 @@
   background: #ffffff;
 }
 
+.chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px 24px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.export-btn {
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  color: #555;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-btn:hover {
+  background: #f0f0f0;
+  border-color: #4a90e2;
+  color: #333;
+}
+
 .messages-container {
   flex: 1;
   overflow-y: auto;

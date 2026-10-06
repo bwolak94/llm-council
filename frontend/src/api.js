@@ -47,6 +47,28 @@ export const api = {
   },
 
   /**
+   * Get current council configuration.
+   */
+  async getConfig() {
+    const response = await fetch(`${API_BASE}/api/config`);
+    if (!response.ok) throw new Error('Failed to get config');
+    return response.json();
+  },
+
+  /**
+   * Update council configuration.
+   */
+  async updateConfig(councilModels, chairmanModel) {
+    const response = await fetch(`${API_BASE}/api/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ council_models: councilModels, chairman_model: chairmanModel }),
+    });
+    if (!response.ok) throw new Error('Failed to update config');
+    return response.json();
+  },
+
+  /**
    * Send a message in a conversation.
    */
   async sendMessage(conversationId, content) {

@@ -26,7 +26,14 @@ export default function Stage1({ responses }) {
       </div>
 
       <div className="tab-content">
-        <div className="model-name">{responses[activeTab].model}</div>
+        <div className="tab-content-header">
+          <div className="model-name">{responses[activeTab].model}</div>
+          {responses[activeTab].usage && (
+            <div className="token-badge">
+              {responses[activeTab].usage.total_tokens?.toLocaleString()} tokens
+            </div>
+          )}
+        </div>
         <div className="response-text markdown-content">
           <ReactMarkdown>{responses[activeTab].response}</ReactMarkdown>
         </div>
