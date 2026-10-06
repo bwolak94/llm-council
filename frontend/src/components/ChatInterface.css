@@ -125,13 +125,75 @@
   }
 }
 
+.input-area {
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+.criteria-section {
+  padding: 12px 24px 0;
+}
+
+.criteria-toggle {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.criteria-toggle:hover {
+  color: #333;
+}
+
+.criteria-count {
+  background: #4a90e2;
+  color: #fff;
+  font-size: 11px;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-weight: 600;
+}
+
+.criteria-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-bottom: 4px;
+}
+
+.criteria-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  padding: 5px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  background: #fff;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.criteria-checkbox-row:hover {
+  border-color: #4a90e2;
+}
+
+.criteria-checkbox-row input[type='checkbox'] {
+  cursor: pointer;
+}
+
 .input-form {
   display: flex;
   align-items: flex-end;
   gap: 12px;
-  padding: 24px;
-  border-top: 1px solid #e0e0e0;
-  background: #fafafa;
+  padding: 16px 24px 24px;
 }
 
 .message-input {

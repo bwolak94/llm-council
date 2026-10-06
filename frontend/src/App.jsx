@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatInterface from './components/ChatInterface';
 import Settings from './components/Settings';
+import Analytics from './components/Analytics';
 import { api } from './api';
 import './App.css';
 
@@ -11,6 +12,7 @@ function App() {
   const [currentConversation, setCurrentConversation] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Load conversations on mount
   useEffect(() => {
@@ -59,7 +61,7 @@ function App() {
     setCurrentConversationId(id);
   };
 
-  const handleSendMessage = async (content) => {
+  const handleSendMessage = async (content, criteria) => {
     if (!currentConversationId) return;
 
     setIsLoading(true);
@@ -92,7 +94,7 @@ function App() {
       }));
 
       // Send message with streaming
-      await api.sendMessageStream(currentConversationId, content, (eventType, event) => {
+      await api.sendMessageStream(currentConversationId, content, criteria, (eventType, event) => {
         switch (eventType) {
           case 'stage1_start':
             setCurrentConversation((prev) => {
@@ -199,15 +201,21 @@ function App() {
       <Sidebar
         conversations={conversations}
         currentConversationId={currentConversationId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
+        onSelectConversation={(id) => { setShowAnalytics(false); handleSelectConversation(id); }}
+        onNewConversation={() => { setShowAnalytics(false); handleNewConversation(); }}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenAnalytics={() => setShowAnalytics(true)}
+        showAnalytics={showAnalytics}
       />
-      <ChatInterface
-        conversation={currentConversation}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-      />
+      {showAnalytics ? (
+        <Analytics />
+      ) : (
+        <ChatInterface
+          conversation={currentConversation}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
+      )}
       {showSettings && <Settings onClose={() => setShowSettings(false)} />}
     </div>
   );

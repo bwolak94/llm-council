@@ -1,6 +1,6 @@
 """3-stage LLM Council orchestration."""
 
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
 from .openrouter import query_models_parallel, query_model
 from .config import get_council_models, get_chairman_model
 
@@ -70,7 +70,8 @@ async def stage1_stream_responses(user_query: str):
 
 async def stage2_collect_rankings(
     user_query: str,
-    stage1_results: List[Dict[str, Any]]
+    stage1_results: List[Dict[str, Any]],
+    criteria: Optional[List[str]] = None
 ) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
     """
     Stage 2: Each model ranks the anonymized responses.
@@ -78,6 +79,7 @@ async def stage2_collect_rankings(
     Args:
         user_query: The original user query
         stage1_results: Results from Stage 1
+        criteria: Optional list of ranking criteria to prioritize
 
     Returns:
         Tuple of (rankings list, label_to_model mapping)
@@ -97,6 +99,12 @@ async def stage2_collect_rankings(
         for label, result in zip(labels, stage1_results)
     ])
 
+    if criteria:
+        criteria_lines = "\n".join(f"{i+1}. {c}" for i, c in enumerate(criteria))
+        criteria_section = f"\nFocus your evaluation primarily on these criteria, in order of importance:\n{criteria_lines}\n"
+    else:
+        criteria_section = ""
+
     ranking_prompt = f"""You are evaluating different responses to the following question:
 
 Question: {user_query}
@@ -104,7 +112,7 @@ Question: {user_query}
 Here are the responses from different models (anonymized):
 
 {responses_text}
-
+{criteria_section}
 Your task:
 1. First, evaluate each response individually. For each response, explain what it does well and what it does poorly.
 2. Then, at the very end of your response, provide a final ranking.
@@ -329,12 +337,16 @@ Title:"""
     return title
 
 
-async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
+async def run_full_council(
+    user_query: str,
+    criteria: Optional[List[str]] = None
+) -> Tuple[List, List, Dict, Dict]:
     """
     Run the complete 3-stage council process.
 
     Args:
         user_query: The user's question
+        criteria: Optional ranking criteria to inject into Stage 2
 
     Returns:
         Tuple of (stage1_results, stage2_results, stage3_result, metadata)
@@ -350,7 +362,7 @@ async def run_full_council(user_query: str) -> Tuple[List, List, Dict, Dict]:
         }, {"failed_models": failed_models}
 
     # Stage 2: Collect rankings
-    stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results)
+    stage2_results, label_to_model = await stage2_collect_rankings(user_query, stage1_results, criteria)
 
     # Calculate aggregate rankings
     aggregate_rankings = calculate_aggregate_rankings(stage2_results, label_to_model)

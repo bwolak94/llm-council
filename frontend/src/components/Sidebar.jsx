@@ -6,6 +6,8 @@ export default function Sidebar({
   onSelectConversation,
   onNewConversation,
   onOpenSettings,
+  onOpenAnalytics,
+  showAnalytics,
 }) {
   return (
     <div className="sidebar">
@@ -40,6 +42,12 @@ export default function Sidebar({
       </div>
 
       <div className="sidebar-footer">
+        <button
+          className={`analytics-btn ${showAnalytics ? 'active' : ''}`}
+          onClick={onOpenAnalytics}
+        >
+          ◎ Analytics
+        </button>
         <button className="settings-btn" onClick={onOpenSettings}>
           ⚙ Configure Models
         </button>

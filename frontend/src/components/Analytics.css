@@ -1,0 +1,156 @@
+.analytics {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.analytics-header {
+  padding: 32px 32px 0;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 20px;
+}
+
+.analytics-header h2 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.analytics-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.analytics-loading,
+.analytics-error {
+  padding: 48px 32px;
+  color: #888;
+  font-size: 15px;
+}
+
+.analytics-empty {
+  padding: 48px 32px;
+  color: #888;
+  line-height: 1.8;
+}
+
+.analytics-body {
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.analytics-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.section-hint {
+  font-weight: 400;
+  color: #999;
+  font-size: 12px;
+}
+
+/* CSS bar chart */
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-label {
+  width: 120px;
+  font-size: 13px;
+  color: #555;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.chart-bar-wrap {
+  flex: 1;
+  background: #f0f0f0;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.chart-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 4px;
+}
+
+.chart-bar-rank {
+  background: #4a90e2;
+}
+
+.chart-bar-win {
+  background: #27ae60;
+}
+
+.chart-value {
+  width: 44px;
+  font-size: 13px;
+  color: #555;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: monospace;
+}
+
+/* Summary table */
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.analytics-table th {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 2px solid #e0e0e0;
+  color: #666;
+  font-weight: 600;
+}
+
+.analytics-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.analytics-table tr:last-child td {
+  border-bottom: none;
+}
+
+.analytics-table tr:hover td {
+  background: #fafafa;
+}
+
+.table-model-short {
+  display: block;
+  font-weight: 500;
+}
+
+.table-model-full {
+  display: block;
+  font-size: 11px;
+  color: #aaa;
+  font-family: monospace;
+}

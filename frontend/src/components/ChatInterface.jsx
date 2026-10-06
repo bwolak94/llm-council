@@ -5,12 +5,22 @@ import Stage2 from './Stage2';
 import Stage3 from './Stage3';
 import './ChatInterface.css';
 
+const CRITERIA_OPTIONS = [
+  { id: 'accuracy', label: 'Accuracy & factual correctness' },
+  { id: 'depth', label: 'Depth & insight' },
+  { id: 'clarity', label: 'Clarity & conciseness' },
+  { id: 'practical', label: 'Practical usefulness' },
+  { id: 'creativity', label: 'Creativity & originality' },
+];
+
 export default function ChatInterface({
   conversation,
   onSendMessage,
   isLoading,
 }) {
   const [input, setInput] = useState('');
+  const [selectedCriteria, setSelectedCriteria] = useState([]);
+  const [showCriteria, setShowCriteria] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -21,10 +31,19 @@ export default function ChatInterface({
     scrollToBottom();
   }, [conversation]);
 
+  const toggleCriterion = (id) => {
+    setSelectedCriteria((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (input.trim() && !isLoading) {
-      onSendMessage(input);
+      const criteriaLabels = selectedCriteria.map(
+        (id) => CRITERIA_OPTIONS.find((c) => c.id === id)?.label
+      ).filter(Boolean);
+      onSendMessage(input, criteriaLabels);
       setInput('');
     }
   };
@@ -186,24 +205,52 @@ export default function ChatInterface({
       </div>
 
       {conversation.messages.length === 0 && (
-        <form className="input-form" onSubmit={handleSubmit}>
-          <textarea
-            className="message-input"
-            placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isLoading}
-            rows={3}
-          />
-          <button
-            type="submit"
-            className="send-button"
-            disabled={!input.trim() || isLoading}
-          >
-            Send
-          </button>
-        </form>
+        <div className="input-area">
+          <div className="criteria-section">
+            <button
+              type="button"
+              className="criteria-toggle"
+              onClick={() => setShowCriteria((v) => !v)}
+            >
+              {showCriteria ? '▾' : '▸'} Evaluation criteria
+              {selectedCriteria.length > 0 && (
+                <span className="criteria-count">{selectedCriteria.length} selected</span>
+              )}
+            </button>
+            {showCriteria && (
+              <div className="criteria-options">
+                {CRITERIA_OPTIONS.map((opt) => (
+                  <label key={opt.id} className="criteria-checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={selectedCriteria.includes(opt.id)}
+                      onChange={() => toggleCriterion(opt.id)}
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          <form className="input-form" onSubmit={handleSubmit}>
+            <textarea
+              className="message-input"
+              placeholder="Ask your question... (Shift+Enter for new line, Enter to send)"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
+              rows={3}
+            />
+            <button
+              type="submit"
+              className="send-button"
+              disabled={!input.trim() || isLoading}
+            >
+              Send
+            </button>
+          </form>
+        </div>
       )}
     </div>
   );

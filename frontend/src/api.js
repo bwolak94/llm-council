@@ -89,6 +89,15 @@ export const api = {
   },
 
   /**
+   * Get aggregated model performance analytics.
+   */
+  async getAnalytics() {
+    const response = await fetch(`${API_BASE}/api/analytics`);
+    if (!response.ok) throw new Error('Failed to get analytics');
+    return response.json();
+  },
+
+  /**
    * Retry a single failed model from Stage 1.
    */
   async retryModel(conversationId, model) {
@@ -108,10 +117,11 @@ export const api = {
    * Send a message and receive streaming updates.
    * @param {string} conversationId - The conversation ID
    * @param {string} content - The message content
+   * @param {string[]} criteria - Optional ranking criteria
    * @param {function} onEvent - Callback function for each event: (eventType, data) => void
    * @returns {Promise<void>}
    */
-  async sendMessageStream(conversationId, content, onEvent) {
+  async sendMessageStream(conversationId, content, criteria, onEvent) {
     const response = await fetch(
       `${API_BASE}/api/conversations/${conversationId}/message/stream`,
       {
@@ -119,7 +129,7 @@ export const api = {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, criteria: criteria?.length ? criteria : null }),
       }
     );
 
